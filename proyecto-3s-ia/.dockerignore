@@ -1,0 +1,17 @@
+# Dependencias locales (se instalan de nuevo dentro del contenedor)
+node_modules
+npm-debug.log
+
+# Archivos de compilación locales
+dist
+build
+
+# Archivos de configuración local y secretos (MUY IMPORTANTE)
+.env
+.git
+.gitignore
+*.md
+
+# Archivos de sesión de WhatsApp (para que no se suban tus credenciales locales)
+auth_info_baileys
+session
