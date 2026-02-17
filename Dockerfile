@@ -1,5 +1,5 @@
 # Usamos Node con soporte para TypeScript
-FROM node:18-slim
+FROM node:20-slim
 
 # Instalamos dependencias para el sistema y Baileys (multimedia)
 # Incluimos openssl porque es necesario para que Prisma funcione en contenedores
