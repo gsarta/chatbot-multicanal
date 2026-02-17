@@ -16,6 +16,18 @@ async function main() {
     console.log("🚀 Motor 3S IA Online...");
     const sock = await whatsappService.connect();
 
+    // --- LÓGICA DE PAIRING CODE PARA RENDER (NUEVO) ---
+    if (!sock.authState.creds.registered) {
+        // Asegúrate de cambiar este número por el número real del BOT
+        const numeroBot = '573203910334'; 
+        setTimeout(async () => {
+            const codigo = await sock.requestPairingCode(numeroBot);
+            console.log(`\n\n************************************`);
+            console.log(`🚀 TU CÓDIGO DE VINCULACIÓN ES: ${codigo}`);
+            console.log(`************************************\n\n`);
+        }, 5000);
+    }
+
     sock.ev.on('messages.upsert', async ({ messages, type }: any) => {
         if (type !== 'notify' && type !== undefined) return;
         const msg = messages[0];
@@ -142,8 +154,7 @@ async function main() {
                             interesActual
                         );
 
-                        // --- SOLUCIÓN AL ERROR TS2345 ---
-                        // Usamos ?? 'Cliente' para asegurar que el nombre nunca sea null
+                        // --- SOLUCIÓN CRM VTIGER ---
                         await vtiger.createLead(usuarioExistente.nombre ?? 'Cliente', 'Usuario WA', idWhatsApp);
 
                         const reporteAdmin = `🚀 *SOLICITUD DE REPORTE (CLIENTE)*\n👤 *Nombre:* ${usuarioExistente.nombre}\n🎯 *Interés:* ${interesActual}\n📧 *Email:* ${usuarioExistente.email}`;
