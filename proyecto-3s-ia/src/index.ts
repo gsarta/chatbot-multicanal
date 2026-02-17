@@ -5,8 +5,12 @@ import { registrationAgent } from './agents/registration.agent';
 import { supportAgent } from './agents/support.agent';
 import { aiService } from './services/ai.service';
 import { MESSAGES } from './config/messages';
+// --- NUEVA IMPORTACIÓN ---
+import { VtigerService } from './services/vtiger.service';
 
 const estadoUsuario: Record<string, string> = {}; 
+// --- INSTANCIA DEL SERVICIO ---
+const vtiger = new VtigerService();
 
 async function main() {
     console.log("🚀 Motor 3S IA Online...");
@@ -137,6 +141,10 @@ async function main() {
                             "Solicitud de Reporte (Usuario Existente)", 
                             interesActual
                         );
+
+                        // --- SOLUCIÓN AL ERROR TS2345 ---
+                        // Usamos ?? 'Cliente' para asegurar que el nombre nunca sea null
+                        await vtiger.createLead(usuarioExistente.nombre ?? 'Cliente', 'Usuario WA', idWhatsApp);
 
                         const reporteAdmin = `🚀 *SOLICITUD DE REPORTE (CLIENTE)*\n👤 *Nombre:* ${usuarioExistente.nombre}\n🎯 *Interés:* ${interesActual}\n📧 *Email:* ${usuarioExistente.email}`;
                         await whatsappService.sendMessage('573508869697@s.whatsapp.net', reporteAdmin);
