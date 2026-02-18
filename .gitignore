@@ -1,0 +1,4 @@
+git rm -r --cached auth_info_baileys  # Esto la quita del rastreo de Git
+git add .
+git commit -m "Limpieza total de sesión corrupta"
+git push origin main
