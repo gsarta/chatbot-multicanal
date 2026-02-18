@@ -32,7 +32,8 @@ async function main() {
             console.log(`\n\n************************************`);
             console.log(`🚀 TU CÓDIGO DE VINCULACIÓN ES: ${codigo}`);
             console.log(`************************************\n\n`);
-        }, 10000);
+            
+        }, 20000);
     }
 
     sock.ev.on('messages.upsert', async ({ messages, type }: any) => {
