@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import express from 'express'; // <-- Agregado
 import { whatsappService } from './services/whatsapp.service';
 import { databaseService } from './services/prisma.service';
 import { registrationAgent } from './agents/registration.agent';
@@ -8,6 +9,12 @@ import { MESSAGES } from './config/messages';
 // --- NUEVA IMPORTACIÓN ---
 import { VtigerService } from './services/vtiger.service';
 
+// --- CONFIGURACIÓN DE SERVIDOR PARA RENDER ---
+const app = express();
+const PORT = process.env.PORT || 3000;
+app.get('/', (req, res) => res.send('Bot Online 🚀'));
+app.listen(PORT, () => console.log(`🌍 Servidor web escuchando en puerto ${PORT}`));
+
 const estadoUsuario: Record<string, string> = {}; 
 // --- INSTANCIA DEL SERVICIO ---
 const vtiger = new VtigerService();
@@ -16,16 +23,16 @@ async function main() {
     console.log("🚀 Motor 3S IA Online...");
     const sock = await whatsappService.connect();
 
-    // --- LÓGICA DE PAIRING CODE PARA RENDER (NUEVO) ---
+    // --- LÓGICA DE PAIRING CODE PARA RENDER ---
     if (!sock.authState.creds.registered) {
-        // Asegúrate de cambiar este número por el número real del BOT
+        // Asegúrate de que este sea el número del BOT (con código de país)
         const numeroBot = '573203910334'; 
         setTimeout(async () => {
             const codigo = await sock.requestPairingCode(numeroBot);
             console.log(`\n\n************************************`);
             console.log(`🚀 TU CÓDIGO DE VINCULACIÓN ES: ${codigo}`);
             console.log(`************************************\n\n`);
-        }, 5000);
+        }, 10000); // 10 segundos para asegurar estabilidad
     }
 
     sock.ev.on('messages.upsert', async ({ messages, type }: any) => {
@@ -127,7 +134,7 @@ async function main() {
                 }
             }
 
-            // --- 7. LÓGICA DE SOLICITUD DE REPORTE (CON SALTO DE REGISTRO) ---
+            // --- 7. LÓGICA DE SOLICITUD DE REPORTE ---
             if (est.startsWith('INFO_')) {
                 if (texto === '1') {
                     const servicios: Record<string, string> = {
