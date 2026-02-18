@@ -1,5 +1,6 @@
 import 'dotenv/config';
-import express from 'express'; // <-- Agregado
+import express from 'express'; 
+import http from 'http';
 import { whatsappService } from './services/whatsapp.service';
 import { databaseService } from './services/prisma.service';
 import { registrationAgent } from './agents/registration.agent';
@@ -9,7 +10,7 @@ import { MESSAGES } from './config/messages';
 // --- NUEVA IMPORTACIÓN ---
 import { VtigerService } from './services/vtiger.service';
 
-// --- CONFIGURACIÓN DE SERVIDOR PARA RENDER ---
+// --- CONFIGURACIÓN DE SERVIDOR PARA RENDER (OBLIGATORIO) ---
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.get('/', (req, res) => res.send('Bot Online 🚀'));
@@ -25,14 +26,13 @@ async function main() {
 
     // --- LÓGICA DE PAIRING CODE PARA RENDER ---
     if (!sock.authState.creds.registered) {
-        // Asegúrate de que este sea el número del BOT (con código de país)
         const numeroBot = '573203910334'; 
         setTimeout(async () => {
             const codigo = await sock.requestPairingCode(numeroBot);
             console.log(`\n\n************************************`);
             console.log(`🚀 TU CÓDIGO DE VINCULACIÓN ES: ${codigo}`);
             console.log(`************************************\n\n`);
-        }, 10000); // 10 segundos para asegurar estabilidad
+        }, 10000);
     }
 
     sock.ev.on('messages.upsert', async ({ messages, type }: any) => {
@@ -134,7 +134,7 @@ async function main() {
                 }
             }
 
-            // --- 7. LÓGICA DE SOLICITUD DE REPORTE ---
+            // --- 7. LÓGICA DE SOLICITUD DE REPORTE (CON SALTO DE REGISTRO) ---
             if (est.startsWith('INFO_')) {
                 if (texto === '1') {
                     const servicios: Record<string, string> = {
@@ -198,5 +198,12 @@ async function main() {
         }
     });
 }
+
+// --- MANTENIMIENTO DE ACTIVIDAD (KEEP-ALIVE) ---
+setInterval(() => {
+    http.get(`http://localhost:${PORT}/`, (res) => {
+        // Genera tráfico interno para que Render no suspenda el proceso
+    }).on('error', () => { /* Silenciar error de red interna */ });
+}, 60000);
 
 main().catch(err => console.error("🚨 Error Crítico:", err));
