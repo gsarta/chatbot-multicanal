@@ -36,7 +36,9 @@ async function main() {
     }
 
     sock.ev.on('messages.upsert', async ({ messages, type }: any) => {
-        if (type !== 'notify' && type !== undefined) return;
+        // --- FILTRO DE MENSAJES NUEVOS (PARA NO BLOQUEARSE CON EL HISTORIAL) ---
+        if (type !== 'notify') return; 
+        
         const msg = messages[0];
         if (!msg.message || msg.key.fromMe) return;
 
