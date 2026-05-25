@@ -1,5 +1,15 @@
-node_modules
-dist
-.env
-auth_info_baileys
+node_modules/
+dist/
 *.log
+npm-debug.log*
+
+# WhatsApp session - nunca commitear credenciales de sesión
+proyecto-3s-ia/auth_info_baileys/
+auth_info_baileys/
+
+# Variables de entorno con secretos
+proyecto-3s-ia/.env
+.env
+
+# Archivos de compilación locales
+proyecto-3s-ia/dist/
