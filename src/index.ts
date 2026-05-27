@@ -14,6 +14,19 @@ import { VtigerService } from './services/vtiger.service';
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.get('/', (req, res) => res.send('Bot Online 🚀'));
+
+app.get('/pair', async (req, res) => {
+    const sock = whatsappService.socket;
+    if (!sock) return res.status(503).send('Bot aún no inicializado, espera unos segundos.');
+    if (sock.authState.creds.registered) return res.send('✅ Ya vinculado, no se necesita código.');
+    try {
+        const code = await sock.requestPairingCode(process.env.BOT_PHONE_NUMBER!);
+        res.send(`Código de vinculación: <b>${code}</b> &nbsp;(válido ~160 segundos)`);
+    } catch (e: any) {
+        res.status(500).send(`Error al generar código: ${e.message}`);
+    }
+});
+
 app.listen(PORT, () => console.log(`🌍 Servidor web escuchando en puerto ${PORT}`));
 
 const estadoUsuario: Record<string, string> = {}; 
