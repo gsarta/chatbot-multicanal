@@ -26,7 +26,7 @@ async function main() {
 
     // --- LÓGICA DE PAIRING CODE PARA RENDER ---
     if (!sock.authState.creds.registered) {
-        const numeroBot = '573203910334'; 
+        const numeroBot = process.env.BOT_PHONE_NUMBER!;
         setTimeout(async () => {
             const codigo = await sock.requestPairingCode(numeroBot);
             console.log(`\n\n************************************`);
@@ -168,7 +168,7 @@ async function main() {
                         await vtiger.createLead(usuarioExistente.nombre ?? 'Cliente', 'Usuario WA', idWhatsApp);
 
                         const reporteAdmin = `🚀 *SOLICITUD DE REPORTE (CLIENTE)*\n👤 *Nombre:* ${usuarioExistente.nombre}\n🎯 *Interés:* ${interesActual}\n📧 *Email:* ${usuarioExistente.email}`;
-                        await whatsappService.sendMessage('573508869697@s.whatsapp.net', reporteAdmin);
+                        await whatsappService.sendMessage(`${process.env.ADMIN_PHONE_NUMBER}@s.whatsapp.net`, reporteAdmin);
 
                         return await whatsappService.sendMessage(jid, `✅ ¡Listo, *${usuarioExistente.nombre}*!\n\nYa hemos generado tu solicitud de **Reporte de Viabilidad** para **${interesActual}**. Un consultor senior revisará tu perfil y te escribirá a este número.`);
                     } else {
