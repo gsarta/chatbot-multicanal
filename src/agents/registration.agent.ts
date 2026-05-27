@@ -2,8 +2,7 @@ import { databaseService } from '../services/prisma.service';
 import { whatsappService } from '../services/whatsapp.service';
 import { validationService } from '../services/validation.service';
 
-// Definimos el número de notificación directamente para evitar errores de importación
-const NOTIFICAR_A = '573508869697@s.whatsapp.net';
+const NOTIFICAR_A = `${process.env.ADMIN_PHONE_NUMBER}@s.whatsapp.net`;
 
 export const registrationAgent = {
     sessions: {} as Record<string, any>,
