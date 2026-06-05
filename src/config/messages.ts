@@ -262,7 +262,7 @@ Pregúntame lo que necesites sobre IA o software. Escribe tu duda.
     
     contactanos: `📞 *Contáctanos*
 
-📱 *WhatsApp:* [+57 320 8738984](https://wa.me/${process.env.ADMIN_PHONE_NUMBER})
+📱 *WhatsApp:* [+57 320 8738984](https://wa.me/573208738984)
 🌐 *Web:* [3sia.com.co/contacto](https://www.3sia.com.co/contacto)
 ✉️ *Email:* col3sia@gmail.com
 

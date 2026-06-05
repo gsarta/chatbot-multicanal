@@ -1,7 +1,15 @@
 import 'dotenv/config';
-import express from 'express'; 
+import express from 'express';
 import http from 'http';
 import { whatsappService } from './services/whatsapp.service';
+
+// Prevenir crashes por rechazos de promesas no manejados
+process.on('unhandledRejection', (reason) => {
+    console.error('🚨 UnhandledRejection (no se cierra el proceso):', reason);
+});
+process.on('uncaughtException', (err) => {
+    console.error('🚨 UncaughtException (no se cierra el proceso):', err);
+});
 import { databaseService } from './services/prisma.service';
 import { registrationAgent } from './agents/registration.agent';
 import { supportAgent } from './agents/support.agent';
@@ -29,9 +37,33 @@ app.get('/pair', async (req, res) => {
 
 app.listen(PORT, () => console.log(`🌍 Servidor web escuchando en puerto ${PORT}`));
 
-const estadoUsuario: Record<string, string> = {}; 
+const estadoUsuario: Record<string, string> = {};
+const lastActivity: Record<string, number> = {};
+const SESSION_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutos
+
 // --- INSTANCIA DEL SERVICIO ---
 const vtiger = new VtigerService();
+
+// --- LIMPIEZA DE SESIONES INACTIVAS ---
+setInterval(async () => {
+    const now = Date.now();
+    for (const jid of Object.keys(lastActivity)) {
+        if (now - lastActivity[jid] > SESSION_TIMEOUT_MS) {
+            const teniaSessionActiva = estadoUsuario[jid] ||
+                registrationAgent.sessions[jid] ||
+                supportAgent.sessions[jid];
+
+            delete estadoUsuario[jid];
+            delete registrationAgent.sessions[jid];
+            delete supportAgent.sessions[jid];
+            delete lastActivity[jid];
+
+            if (teniaSessionActiva && whatsappService.isConnected) {
+                await whatsappService.sendMessage(jid, MESSAGES.timeoutCierre).catch(() => {});
+            }
+        }
+    }
+}, 60 * 1000);
 
 async function main() {
     console.log("🚀 Motor 3S IA Online...");
@@ -49,15 +81,18 @@ async function main() {
         }, 20000);
     }
 
-    sock.ev.on('messages.upsert', async ({ messages, type }: any) => {
+    whatsappService.setMessageHandler(async ({ messages, type }: any) => {
+        console.log(`📨 messages.upsert - type: ${type}, count: ${messages?.length}`);
         // --- FILTRO DE MENSAJES NUEVOS (PARA NO BLOQUEARSE CON EL HISTORIAL) ---
-        if (type !== 'notify') return; 
-        
+        if (type !== 'notify') return;
+
         const msg = messages[0];
         if (!msg.message || msg.key.fromMe) return;
 
         const jid = msg.key.remoteJid!;
+        lastActivity[jid] = Date.now();
         const texto = (msg.message.conversation || msg.message.extendedTextMessage?.text || "").trim();
+        console.log(`💬 Mensaje de ${jid}: "${texto}"`);
         const textoLow = texto.toLowerCase();
 
         try {
@@ -199,7 +234,7 @@ async function main() {
 
             // --- 8. IA Y PREGUNTAS ABIERTAS ---
             if (!/^\d+$/.test(texto)) {
-                await sock.sendPresenceUpdate('composing', jid);
+                await whatsappService.socket.sendPresenceUpdate('composing', jid);
                 await databaseService.saveMessage(jid, texto, 'user');
                 
                 const respuestaIA = await aiService.getSimpleResponse(texto);

@@ -48,10 +48,13 @@ export const validationService = {
 
         const dominio = emailClean.split('@')[1];
         try {
-            const mx = await dns.resolveMx(dominio);
+            const timeout = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('DNS timeout')), 5000)
+            );
+            const mx = await Promise.race([dns.resolveMx(dominio), timeout]);
             return mx && mx.length > 0;
         } catch {
-            return false; // El dominio no tiene servidores de correo válidos
+            return false;
         }
     }
 };
