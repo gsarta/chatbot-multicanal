@@ -274,5 +274,7 @@ Pregúntame lo que necesites sobre IA o software. Escribe tu duda.
 
     despedida: "🙏 *Gracias por contactar con 3S IA.*\n\nHa sido un gusto atenderte. Si necesitas algo más, solo escribe 'Hola' para volver a empezar. ¡Que tengas un excelente día! 🚀",
 
-    timeoutCierre: "⏳ *Sesión finalizada por inactividad.*\n\nSe ha terminado el tiempo de espera. No te preocupes, cuando estés listo, escribe 'Hola' y volveré para ayudarte. ¡Vuelve pronto! 👋"
+    timeoutCierre: "⏳ *Sesión finalizada por inactividad.*\n\nSe ha terminado el tiempo de espera. No te preocupes, cuando estés listo, escribe 'Hola' y volveré para ayudarte. ¡Vuelve pronto! 👋",
+
+    errorGenerico: "⚠️ *Ups, algo falló de nuestro lado.*\n\nNo pude procesar tu mensaje en este momento. Inténtalo de nuevo en unos segundos, o escribe 'Hola' para volver al menú principal."
 };

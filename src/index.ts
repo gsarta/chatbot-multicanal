@@ -99,8 +99,8 @@ async function main() {
             // --- 1. RECONOCIMIENTO DE USUARIO / INICIO ---
             if (!registrationAgent.sessions[jid] && (!estadoUsuario[jid] || ['hola', 'menu', 'inicio'].includes(textoLow))) {
                 const idWhatsApp = jid.split('@')[0];
-                const usuarioExistente = await databaseService.findUserByWhatsAppId(idWhatsApp);
-                
+                const usuarioExistente = await databaseService.findUserByWhatsAppIdSafe(idWhatsApp);
+
                 estadoUsuario[jid] = 'MAIN';
                 if (usuarioExistente) {
                     return await whatsappService.sendMessage(jid, `¡Hola de nuevo, *${usuarioExistente.nombre}*! 👋\n\n${MESSAGES.menuPrincipal}`);
@@ -244,8 +244,12 @@ async function main() {
                 return await whatsappService.sendMessage(jid, textoFinal);
             }
 
-        } catch (error) {
-            console.error("❌ Error:", error);
+        } catch (error: any) {
+            // Sin este contexto, un fallo aquí es indistinguible de un bot desconectado.
+            console.error(`❌ Error procesando mensaje | jid: ${jid} | estado: ${estadoUsuario[jid] ?? '(ninguno)'} | texto: "${texto}"`);
+            console.error(error);
+            // Nunca dejar al usuario hablando solo: el silencio total no es diagnosticable.
+            await whatsappService.sendMessage(jid, MESSAGES.errorGenerico).catch(() => {});
         }
     });
 }

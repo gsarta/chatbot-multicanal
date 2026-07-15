@@ -10,20 +10,38 @@ export const databaseService = {
         });
     },
 
-    // GUARDAR MENSAJES (Ahora usa el modelo Interaction)
-    async saveMessage(whatsappId: string, texto: string, role: 'user' | 'assistant') {
-        const user = await this.findUserByWhatsAppId(whatsappId.split('@')[0]);
-        if (!user) return;
+    // Igual que findUserByWhatsAppId, pero degrada a null si la DB no responde.
+    // El menú principal es idéntico para usuario conocido o desconocido: la base
+    // solo aporta el saludo por nombre, así que un fallo aquí no debe dejar mudo al bot.
+    async findUserByWhatsAppIdSafe(whatsappId: string) {
+        try {
+            return await this.findUserByWhatsAppId(whatsappId);
+        } catch (err: any) {
+            console.error(`⚠️ DB no disponible buscando "${whatsappId}" — se continúa sin personalizar:`, err?.message || err);
+            return null;
+        }
+    },
 
-        return await prisma.interaction.create({
-            data: {
-                user_id: user.id,
-                mensaje_usuario: role === 'user' ? texto : "Respuesta del sistema",
-                respuesta_bot: role === 'assistant' ? texto : "Consulta del usuario",
-                intencion: "Chat general",
-                resolucion_automatica: true
-            }
-        });
+    // GUARDAR MENSAJES (Ahora usa el modelo Interaction)
+    // Es telemetría: si falla, se registra y se sigue. Nunca debe interrumpir la respuesta.
+    async saveMessage(whatsappId: string, texto: string, role: 'user' | 'assistant') {
+        try {
+            const user = await this.findUserByWhatsAppId(whatsappId.split('@')[0]);
+            if (!user) return;
+
+            return await prisma.interaction.create({
+                data: {
+                    user_id: user.id,
+                    mensaje_usuario: role === 'user' ? texto : "Respuesta del sistema",
+                    respuesta_bot: role === 'assistant' ? texto : "Consulta del usuario",
+                    intencion: "Chat general",
+                    resolucion_automatica: true
+                }
+            });
+        } catch (err: any) {
+            console.error(`⚠️ No se pudo registrar la interacción de "${whatsappId}":`, err?.message || err);
+            return;
+        }
     },
 
     // --- ESTA ES LA FUNCIÓN QUE TE PEDÍA EL ERROR ---
