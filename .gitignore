@@ -1,15 +1,31 @@
+# Dependencias
 node_modules/
+
+# Compilación TypeScript
 dist/
+proyecto-3s-ia/dist/
+
+# Logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# WhatsApp session - nunca commitear credenciales de sesión
-proyecto-3s-ia/auth_info_baileys/
-auth_info_baileys/
-
-# Variables de entorno con secretos
-proyecto-3s-ia/.env
+# Variables de entorno — NUNCA commitear archivos con secretos reales
 .env
+.env.*
+!.env.example
+proyecto-3s-ia/.env
 
-# Archivos de compilación locales
-proyecto-3s-ia/dist/
+# Sesión de WhatsApp — credenciales de sesión de Baileys
+auth_info_baileys/
+proyecto-3s-ia/auth_info_baileys/
+
+# Bases de datos locales
+*.db
+*.sqlite
+prisma/dev.db
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
