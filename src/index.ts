@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
-import http from 'http';
+import { isLidUser } from '@whiskeysockets/baileys';
 import { whatsappService } from './services/whatsapp.service';
 
 // Prevenir crashes por rechazos de promesas no manejados
@@ -76,10 +76,32 @@ async function main() {
         // --- FILTRO DE MENSAJES NUEVOS (PARA NO BLOQUEARSE CON EL HISTORIAL) ---
         if (type !== 'notify') return;
 
-        const msg = messages[0];
+        // messages es un array: antes se tomaba messages[0] y el resto se
+        // descartaba en silencio. Si alguien manda varios seguidos o WhatsApp
+        // los agrupa, se perdían. Se procesan en serie para no romper el orden
+        // de la conversación ni las máquinas de estado por JID.
+        for (const msg of messages ?? []) {
+            await procesarMensaje(msg);
+        }
+    });
+}
+
+// Extraída del handler: su cuerpo usa `return` como control de flujo en ~20
+// sitios, así que dentro de un bucle abortaría el lote entero en vez de pasar
+// al siguiente mensaje.
+async function procesarMensaje(msg: any) {
         if (!msg.message || msg.key.fromMe) return;
 
-        const jid = msg.key.remoteJid!;
+        // Baileys direcciona con LID: remoteJid puede llegar como <id>@lid, y
+        // jid.split('@')[0] daría un LID en vez de un teléfono. Eso terminaba
+        // guardado como whatsapp_id en la base y — peor — enviado a Vtiger como
+        // el teléfono del lead, llenando el CRM de números inexistentes.
+        // En Baileys 6.x el número real viaja en senderPn (en la 7.x sería
+        // remoteJidAlt). Se normaliza aquí para que todo el flujo vea un teléfono.
+        const rawJid = msg.key.remoteJid!;
+        const jid = (isLidUser(rawJid) && msg.key.senderPn) ? msg.key.senderPn : rawJid;
+        if (rawJid !== jid) console.log(`🔀 LID ${rawJid} normalizado a ${jid}`);
+
         lastActivity[jid] = Date.now();
         const texto = (msg.message.conversation || msg.message.extendedTextMessage?.text || "").trim();
         console.log(`💬 Mensaje de ${jid}: "${texto}"`);
@@ -241,14 +263,6 @@ async function main() {
             // Nunca dejar al usuario hablando solo: el silencio total no es diagnosticable.
             await whatsappService.sendMessage(jid, MESSAGES.errorGenerico).catch(() => {});
         }
-    });
 }
-
-// --- MANTENIMIENTO DE ACTIVIDAD (KEEP-ALIVE) ---
-setInterval(() => {
-    http.get(`http://localhost:${PORT}/`, (res) => {
-        // Genera tráfico interno para que Render no suspenda el proceso
-    }).on('error', () => { /* Silenciar error de red interna */ });
-}, 60000);
 
 main().catch(err => console.error("🚨 Error Crítico:", err));
