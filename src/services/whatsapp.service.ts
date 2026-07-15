@@ -6,16 +6,19 @@ import makeWASocket, {
 import { Boom } from '@hapi/boom';
 import { Mutex } from 'async-mutex';
 import { promises as fs } from 'fs';
+import { join } from 'path';
 
 const sendMutex = new Mutex();
 const AUTH_DIR = 'auth_info_baileys';
 const PAIRING_DELAY_MS = 20000;
-const RECONNECT_DELAY_MS = 5000;
+const RECONNECT_BASE_MS = 5000;
+const RECONNECT_MAX_MS = 300000;
 
 export const whatsappService = {
     socket: null as any,
     isConnected: false,
     _messageHandler: null as ((data: any) => void) | null,
+    _reconnectAttempts: 0,
 
     setMessageHandler(handler: (data: any) => void) {
         this._messageHandler = handler;
@@ -27,13 +30,31 @@ export const whatsappService = {
     // Solo se invoca ante un loggedOut: esas credenciales ya no sirven y
     // conservarlas hace que cada reintento vuelva a fallar con 401 en vez de
     // pedir una vinculación nueva.
+    //
+    // Se borra el CONTENIDO, nunca el directorio: en la VM AUTH_DIR es el punto
+    // de montaje del volumen (./auth/multicanal:/app/auth_info_baileys) y un
+    // rmdir sobre él falla con EBUSY, dejando las credenciales muertas en disco
+    // y al bot reintentando 401 en bucle.
     async clearAuthState() {
         try {
-            await fs.rm(AUTH_DIR, { recursive: true, force: true });
-            console.warn('🧹 Credenciales inválidas descartadas.');
+            const entries = await fs.readdir(AUTH_DIR).catch(() => [] as string[]);
+            await Promise.all(
+                entries.map((e) => fs.rm(join(AUTH_DIR, e), { recursive: true, force: true }))
+            );
+            console.warn(`🧹 Credenciales inválidas descartadas (${entries.length} archivo(s)).`);
         } catch (err: any) {
             console.error('No se pudieron descartar las credenciales:', err?.message || err);
         }
+    },
+
+    // Backoff exponencial: 5s, 10s, 20s... hasta 5 min. Sin esto, un bot que no
+    // logra vincularse martillea los servidores de WhatsApp cada 5s de forma
+    // indefinida, que es buena forma de que marquen el número.
+    scheduleReconnect() {
+        const delay = Math.min(RECONNECT_BASE_MS * 2 ** this._reconnectAttempts, RECONNECT_MAX_MS);
+        this._reconnectAttempts++;
+        console.log(`Reintentando en ${Math.round(delay / 1000)}s (intento ${this._reconnectAttempts})...`);
+        setTimeout(() => this.connect(), delay);
     },
 
     // Vive aquí y no en index.ts para que CADA reconexión sin sesión pida un
@@ -103,10 +124,10 @@ export const whatsappService = {
                     await this.clearAuthState();
                 }
 
-                console.log('Intentando reconectar...');
-                setTimeout(() => this.connect(), RECONNECT_DELAY_MS);
+                this.scheduleReconnect();
             } else if (connection === 'open') {
                 this.isConnected = true;
+                this._reconnectAttempts = 0;
                 console.log('✅ BOT CONECTADO Y LISTO');
             }
         });
