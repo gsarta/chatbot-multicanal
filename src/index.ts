@@ -67,19 +67,9 @@ setInterval(async () => {
 
 async function main() {
     console.log("🚀 Motor 3S IA Online...");
-    const sock = await whatsappService.connect();
-
-    // --- LÓGICA DE PAIRING CODE PARA RENDER ---
-    if (!sock.authState.creds.registered) {
-        const numeroBot = process.env.BOT_PHONE_NUMBER!;
-        setTimeout(async () => {
-            const codigo = await sock.requestPairingCode(numeroBot);
-            console.log(`\n\n************************************`);
-            console.log(`🚀 TU CÓDIGO DE VINCULACIÓN ES: ${codigo}`);
-            console.log(`************************************\n\n`);
-            
-        }, 20000);
-    }
+    // El código de vinculación lo pide whatsappService en cada conexión sin
+    // sesión, no solo al arrancar: así un código expirado no deja al bot varado.
+    await whatsappService.connect();
 
     whatsappService.setMessageHandler(async ({ messages, type }: any) => {
         console.log(`📨 messages.upsert - type: ${type}, count: ${messages?.length}`);
